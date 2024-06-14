@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace SellBooksEcommerce.Areas.Customer.Controllers
 {
@@ -44,18 +45,21 @@ namespace SellBooksEcommerce.Areas.Customer.Controllers
             shoppingCart.ApplicationUserId = userId;
 
             ShoppingCart cartFromDb = _unitOfWork.ShoppingCart.Get(u => u.ApplicationUserId == userId && u.ProductId == shoppingCart.ProductId);
-            if (cartFromDb != null) {
+            if (cartFromDb != null)
+            {
                 //update existing cart
                 cartFromDb.Count += shoppingCart.Count;
                 _unitOfWork.ShoppingCart.Update(cartFromDb);
+                _unitOfWork.Save();
             }
             else
             {
                 //Add to cart
-            _unitOfWork.ShoppingCart.Add(shoppingCart);
+                _unitOfWork.ShoppingCart.Add(shoppingCart);
+                _unitOfWork.Save();
+                HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId).Count());
             }
             TempData["success"] = "Cart updated successfully";
-            _unitOfWork.Save();
 
             return RedirectToAction(nameof(Index));
         }
